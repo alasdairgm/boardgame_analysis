@@ -1,0 +1,4 @@
+"0","bg_model1 <- lm(my_rating ~ min_players, data = bg_data)"
+"0",""
+"0",""
+"0","autoplot(bg_model1) # look okay"

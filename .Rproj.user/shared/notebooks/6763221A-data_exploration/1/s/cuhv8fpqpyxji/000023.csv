@@ -1,0 +1,6 @@
+"0","boardgames_combined <- boardgames_combined %>% "
+"0","  mutate(bgg_rank = case_when("
+"0","    boardgame == ""Everdell: The Complete Collection"" ~ 31,"
+"0","    boardgame == ""Tokaido Collector's Edition"" ~ 703,"
+"0","    .default = bgg_rank"
+"0","  ))"

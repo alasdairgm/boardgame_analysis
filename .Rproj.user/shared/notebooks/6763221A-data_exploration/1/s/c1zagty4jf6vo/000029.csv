@@ -1,0 +1,3 @@
+"0","boardgames_combined <- boardgames_trim %>% "
+"0","  filter(!(boardgame %in% expansions)) %>% "
+"0","  full_join(my_ratings, by = c(""boardgame"" = ""game""))"

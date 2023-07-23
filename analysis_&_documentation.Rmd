@@ -1,0 +1,204 @@
+---
+title: "Boardgame data analysis"
+output: html_notebook
+---
+
+I downloaded data on all the boardgames I own from boardgamegeek.com and combined it with my own data (price I paid, my rating) so as to explore the data and pull out any patterns.
+
+In this notebook I will also build a model to explain and predict my rating of a game based on several potential predictors.
+
+
+```{r}
+library(tidyverse)
+
+bg_data <- read_csv("clean_data/boardgames_clean.csv")
+
+bg_data
+```
+# What are the best and worst games I own according to me and according to Boardgamegeek?
+
+```{r}
+bg_data %>% 
+  slice_max(my_rating)
+```
+
+Yep, these are some excellent games.
+
+```{r}
+bg_data %>% 
+  slice_min(my_rating)
+```
+
+This makes sense. I sincerely regret buying Gorilla Marketing. Strange, strange game.
+
+```{r}
+bg_data %>% 
+  slice_max(average_bgg_rating)
+```
+Good taste all round.
+
+```{r}
+bg_data %>% 
+  slice_min(average_bgg_rating)
+```
+Yeah I don't exactly disagree with this. Not my favourite game but not the worst.
+
+
+Let's see how my ratings compare with the average BGG ones for these games:
+```{r}
+bg_data %>% 
+  filter(boardgame %in% c("Everdell: The Complete Collection",
+                          "Root", "Sleeping Gods", "Gorilla Marketing",
+                          "Bears Vs Babies")) %>% 
+  mutate(boardgame = if_else(str_detect(boardgame, "Everdell"),
+                                         "Everdell", boardgame)) %>% 
+  ggplot(aes(x = my_rating, y = average_bgg_rating)) +
+  geom_point(colour = "steelblue", size = 5) +
+  geom_text(aes(label = boardgame),
+            nudge_x = -0.6, angle = 45) +
+  xlim(c(0, 10)) +
+  ylim(c(0, 10)) +
+  labs(x = "\nMy rating",
+       y = "Average BGG rating",
+       ) +
+  theme(text = element_text(size = 16)) +
+  theme_minimal()
+```
+
+## How does this comparison look across all of my games?
+
+```{r}
+bg_data %>% 
+  ggplot(aes(x = my_rating, y = average_bgg_rating)) +
+  geom_point(colour = "steelblue", size = 5) +
+  xlim(c(0, 10)) +
+  ylim(c(0, 10)) +
+  labs(x = "\nMy rating",
+       y = "Average BGG rating",
+       ) +
+  theme(text = element_text(size = 16)) +
+  theme_minimal() +
+  geom_abline(intercept = 0, slope = 1,
+              linetype = "dashed", colour = "red",
+              size = 2)
+```
+
+Looks fairly correlated. Let's find a value:
+```{r}
+library(corrr)
+
+bg_data %>% 
+  corrr::correlate() %>% 
+  corrr::network_plot(colors = c("red", "green"))
+  cor(my_rating, average_bgg_rating)
+  
+bg_data %>% 
+  drop_na(my_rating) %>% 
+  summarise(correlation = cor(my_rating, average_bgg_rating))
+```
+A correlation of 0.58 - fairly strong but nothing to write home about. Can see that I rank poorer games lower than the BGG average and better games higher than the average.
+
+
+## How do my games fair in the overall Boardgamegeek ranking?
+
+```{r}
+bg_data %>% 
+  # removing anything after a colon to save space
+  mutate(boardgame = case_when(
+    str_detect(boardgame, ":") ~ str_extract(boardgame, "(.+): ", group = 1),
+    .default = boardgame)) %>%
+  mutate(top_100 = if_else(bgg_rank <= 100, TRUE, FALSE)) %>% 
+  ggplot() +
+  geom_col(aes(x = reorder(boardgame, -bgg_rank), y = bgg_rank, fill = top_100)) +
+  coord_flip() +
+  labs(y = "BGG rank",
+       x = "",
+       fill = "Top 100?")
+
+```
+
+
+```{r}
+bg_data %>% 
+  mutate(top_100 = if_else(bgg_rank <= 100, TRUE, FALSE)) %>% 
+  group_by(top_100) %>% 
+  summarise(prop_in_top_100 = n() / nrow(bg_data) * 100)
+
+```
+
+Approximately 16% of my boardgames are in the top ranked 100.
+
+Just those games in the top 1000:
+```{r}
+bg_data %>% 
+  filter(bgg_rank <= 1000) %>% 
+  # removing anything after a colon to save space
+  mutate(boardgame = case_when(
+    str_detect(boardgame, ":") ~ str_extract(boardgame, "(.+): ", group = 1),
+    .default = boardgame)) %>%
+  mutate(top_100 = if_else(bgg_rank <= 100, TRUE, FALSE)) %>% 
+  ggplot() +
+  geom_col(aes(x = reorder(boardgame, -bgg_rank), y = bgg_rank, fill = top_100)) +
+  coord_flip() +
+  labs(y = "BGG rank",
+       x = "",
+       fill = "Top 100?")
+
+```
+
+
+
+## Linear regression model
+
+```{r}
+library(modelr)
+library(GGally)
+library(ggfortify)
+```
+
+```{r warning=FALSE}
+bg_data %>% 
+  select(-boardgame) %>% 
+  ggpairs(progress = FALSE)
+```
+
+Contenders are:
+* average_bgg_rating
+* price_i_paid
+* average_difficulty
+* min_players
+
+```{r}
+bg_model1 <- lm(my_rating ~ average_bgg_rating, data = bg_data)
+
+
+autoplot(bg_model1) # look okay
+
+summary(bg_model1)
+  
+```
+Looks like average_bgg_rating is a good predictor of my own rating!
+
+Let's add more predictors:
+
+```{r}
+bg_model2 <- lm(my_rating ~ average_bgg_rating + price_i_paid , data = bg_data)
+
+
+autoplot(bg_model2) # look okay
+
+summary(bg_model2)
+```
+
+Once Avg BGG rating is included as a predictor it seems as though the price I paid for it isn't much of a factor.
+
+```{r}
+bg_model2 <- lm(my_rating ~ average_bgg_rating + average_difficulty , data = bg_data)
+
+
+autoplot(bg_model2) # look okay
+
+summary(bg_model2)
+```
+
+And neither is average difficulty / BGG weight.

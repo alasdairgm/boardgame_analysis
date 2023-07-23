@@ -1,0 +1,150 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+boardgames <- read_csv("raw_data/collection.csv")
+my_ratings <- read_csv("raw_data/my_ratings.csv", locale = locale(encoding="latin1"))
+
+dim(boardgames) # 59 rows 58 cols
+names(boardgames) # lots of columns I'm not interested in
+
+head(boardgames)
+```
+
+We've got the name of the boardgame, it's ID, lots of columns based on my own data about said
+game (will remove for now). 
+- baverage: geek rating
+- average: average rating
+- avgweight: i.e. how difficult game is to learn
+- rank: rank in the bgg database
+- numowned: how many bgg users own the game
+
+
+
+```{r}
+boardgames_trim <- boardgames %>% 
+  select(objectname, average, avgweight, rank, numowned,
+         playingtime, maxplayers, minplayers, bggrecagerange) %>% 
+  rename(boardgame = objectname,
+         average_bgg_rating = average,
+         average_difficulty = avgweight,
+         bgg_rank = rank,
+         num_owned = numowned,
+         max_players = maxplayers,
+         min_players = minplayers,
+         play_time = playingtime,
+         rec_age_range_from = bggrecagerange) %>% 
+  mutate(boardgame = str_to_title(boardgame)) %>% 
+  arrange(boardgame) %>% 
+  mutate(boardgame = str_remove(boardgame, " [:punct:] .+"),
+         # remove dashes and  anything after as these caused issues
+         rec_age_range_from = as.numeric(str_remove(rec_age_range_from, "\\+"))) 
+# remove + from age range and make numeric
+
+
+boardgames_trim
+```
+
+Will join the datasets - challenge is that I named games differently to the bgg dataset.
+```{r}
+my_ratings <- my_ratings %>% 
+  janitor::clean_names() %>% 
+  mutate(game = str_to_title(game)) %>% 
+  select(game, price_i_paid, my_rating, year_bought) %>% 
+  arrange(game) %>% 
+  mutate(game = str_remove(game, " [:punct:] .+"),
+         game = str_remove(game, " $")) %>%  # remove dashes and
+  # anything after as these caused issues
+  filter(game != "Total") # remove total row from original spreadsheet 
+
+my_ratings
+```
+
+Going to get a list of all games from each dataframe side by side for comparison:
+```{r}
+my_game_names <- my_ratings %>% 
+  select(game) 
+bgg_names <- boardgames_trim %>% 
+  select(boardgame) 
+# find which names aren't in one but are in the other
+#setdiff(sort(bgg_names), sort(my_game_names))
+
+# want to exclude expansions as standalone entries
+expansions <- c("Root: The Exiles And Partisans Deck",
+                "Root: The Riverfolk Expansion",
+                "Root: The Underworld Expansion"
+)
+
+comparison <- boardgames_trim %>% 
+  select(boardgame) %>% 
+  filter(!(boardgame %in% expansions)) %>% 
+  bind_cols(my_game_names) %>% 
+  mutate(same = (boardgame == game)) %>% 
+  filter(!same)
+```
+
+Based on this side-by-side comparison of boardgame names, will need to manually ensure the names match. Commas are the main issue, they look the same across datasets but seem to be different somehow.
+
+
+
+```{r}
+boardgames_combined <- boardgames_trim %>% 
+  filter(!(boardgame %in% expansions)) %>% 
+  full_join(my_ratings, by = c("boardgame" = "game"))
+```
+
+
+
+```{r}
+boardgames_combined %>% 
+  ggplot() +
+  geom_histogram(aes(x = average_bgg_rating), fill = "indianred")
+```
+
+
+Missing data?
+```{r}
+boardgames_combined %>% 
+  summarise(across(.cols = everything(), .fns = ~sum(is.na(.x))))
+```
+A few of my prices paid and ratings. The prices paid were gifts and the ratings were ones I haven't played enough to rate.
+
+0s?
+```{r}
+boardgames_combined %>% 
+  summarise(across(.cols = everything(), .fns = ~sum(.x == 0)))
+```
+2 BGG ranks are 0. Hmm
+
+```{r}
+boardgames_combined %>% 
+  filter(bgg_rank == 0)
+```
+
+This is because they are not the standard edition and so BGG doesn't have a ranking - will use original rankings for base games from the site.
+
+Everdell = 31
+Tokaido = 703
+
+```{r}
+boardgames_combined <- boardgames_combined %>% 
+  mutate(bgg_rank = case_when(
+    boardgame == "Everdell: The Complete Collection" ~ 31,
+    boardgame == "Tokaido Collector's Edition" ~ 703,
+    .default = bgg_rank
+  ))
+```
+
+
+
+Save data
+```{r}
+write_csv(boardgames_combined, "clean_data/boardgames_clean.csv")
+```
+
