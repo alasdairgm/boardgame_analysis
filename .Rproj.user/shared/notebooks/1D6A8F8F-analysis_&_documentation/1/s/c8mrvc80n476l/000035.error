@@ -1,1 +1,0 @@
-{"frames":[{"func":"cor(my_rating, average_bgg_rating)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0},{"func":"is.data.frame(y)","file":"","line_number":0,"end_line_number":0,"character_number":0,"end_character_number":0}],"message":"Error: object 'average_bgg_rating' not found\n"}

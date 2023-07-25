@@ -44,8 +44,11 @@ boardgames_trim <- boardgames %>%
   arrange(boardgame) %>% 
   mutate(boardgame = str_remove(boardgame, " [:punct:] .+"),
          # remove dashes and  anything after as these caused issues
-         rec_age_range_from = as.numeric(str_remove(rec_age_range_from, "\\+"))) 
-# remove + from age range and make numeric
+         rec_age_range_from = as.numeric(str_remove(rec_age_range_from, "\\+"))) %>% 
+  # remove + from age range and make numeric
+  mutate(average_players = (max_players + min_players)/2)
+ # make a new column with number of players between min and max
+
 
 
 boardgames_trim
