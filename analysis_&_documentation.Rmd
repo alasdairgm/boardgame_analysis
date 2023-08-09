@@ -251,13 +251,13 @@ players_cluster_plot +
   
 ```
 
-Cluster 1 seems to represent the games that can accommodate medium-sized groups that I don't enjoy very much.
+Cluster 2 seems to represent the games that can accommodate medium-sized groups that I don't enjoy very much.
 
-Cluster 2 seems to represent the party games that can play with large groups that I enjoy very much - e.g. Wavelength.
+Cluster 3 seems to represent the party games that can play with large groups that I enjoy very much - e.g. Wavelength.
 
-Cluster 3 contains those games for smaller groups that I find pretty good.
+Cluster 4 contains those games for smaller groups that I find pretty good.
 
-Cluster 4 contains the games for the smallest groups that I find excellent.
+Cluster 1 contains the games for the smallest groups that I find excellent.
 
 
 ## Play time
@@ -335,7 +335,7 @@ playtime_cluster_plot <- clusterings %>%
   filter(k <= 4) %>%
   ggplot(aes(x = play_time, y = my_rating)) +
   geom_point(aes(colour = .cluster)) +
-  labs(x = "Average play time",
+  labs(x = "Average play time (mins)",
        y = "My rating",
        colour = "Cluster")
 
@@ -452,10 +452,21 @@ summary(bg_model_final)
 Model explains almost half of the variance in my ratings. Seems that the:
 
 * BGG average rating has a positive relationship with my rating (+1 in BGG rating leads to +1.11 in my rating)
-* the difficulty has a negative relationship with my rating (+ 1 in difficulty/weight leads to + 0.97 in my rating)
+* the difficulty has a positive relationship with my rating (+ 1 in difficulty/weight leads to + 0.97 in my rating)
 * The recommended ages (i.e. ages x and above) has a negative relationship with my rating (+ 1 in age leads to -0.20 in my rating)
 
 The other predictors are not significant.
 
 Interesting that I like games that are more difficult but not games for older players. Less interesting that I rate games higher if they're rated higher on BGG.
+
+```{r}
+car::vif(bg_model_final)
+
+alias(bg_model_final)
+
+library(see)
+library(performance)
+
+check_model(bg_model_final)
+```
 
