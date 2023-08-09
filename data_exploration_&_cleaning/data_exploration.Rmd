@@ -92,8 +92,9 @@ comparison <- boardgames_trim %>%
   filter(!same)
 ```
 
-Based on this side-by-side comparison of boardgame names, will need to manually ensure the names match. Commas are the main issue, they look the same across datasets but seem to be different somehow.
-
+Based on this side-by-side comparison of boardgame names, will need to manually
+ensure the names match. Commas are the main issue, they look the same across
+datasets but seem to be different somehow.
 
 
 ```{r}
