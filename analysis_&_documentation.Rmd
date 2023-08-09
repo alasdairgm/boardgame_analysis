@@ -1,7 +1,16 @@
 ---
 title: "Boardgame data analysis"
-output: html_notebook
+output:
+  html_document:
+    toc: true # contents
+    toc_float: true # contents float
+    number_sections: true
+    df_print: paged # paged dataframes
+    css: styles.css # use css file from this project
+  pdf_document: default
 ---
+
+# Introduction
 
 I downloaded data on all the boardgames I own from boardgamegeek.com and combined it with my own data (price I paid, my rating) so as to explore the data and pull out any patterns.
 
@@ -16,6 +25,8 @@ bg_data <- read_csv("clean_data/boardgames_clean.csv")
 
 bg_data
 ```
+
+
 # What are the best and worst games I own according to me and according to Boardgamegeek?
 
 ```{r}
@@ -66,7 +77,8 @@ bg_data %>%
   theme_minimal()
 ```
 
-## How does this comparison look across all of my games?
+
+# How does this comparison look across all of my games?
 
 ```{r}
 bg_data %>% 
@@ -100,7 +112,8 @@ bg_data %>%
 A correlation of 0.58 - fairly strong but nothing to write home about. Can see that I rank poorer games lower than the BGG average and better games higher than the average.
 
 
-## How do my games fair in the overall Boardgamegeek ranking?
+
+# How do my games fair in the overall Boardgamegeek ranking?
 
 ```{r}
 bg_data %>% 
@@ -148,7 +161,7 @@ bg_data %>%
 ```
 
 
-## Number of players
+# Number of players
 
 Does the number of recommended players for a game affect my enjoyment of it?
 
@@ -162,7 +175,7 @@ bg_data %>%
 
 Quite a mixed spread with no real trend. 
 
-### Clustering
+## Clustering
 
 Wrangle and scale the data:
 
@@ -260,7 +273,8 @@ Cluster 4 contains those games for smaller groups that I find pretty good.
 Cluster 1 contains the games for the smallest groups that I find excellent.
 
 
-## Play time
+
+# Play time
 
 Does the play time of a game affect my enjoyment of it?
 
@@ -274,7 +288,7 @@ bg_data %>%
 
 There seems to be a slight positive relationship between the length of a game and how I rate it.
 
-### Clustering
+## Clustering
 
 ```{r}
 playtime_ratings <- bg_data %>% 
@@ -384,7 +398,7 @@ bg_data %>%
 ```
 
 
-## Linear regression model
+# Linear regression model: can I predict how I will rate a boardgame?
 
 ```{r}
 library(modelr)
